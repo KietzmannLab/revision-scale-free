@@ -104,7 +104,7 @@ conflicts = [
 module-name = "lib"
 
 [tool.uv.sources]
-bonner-libraries = { path = "../../libraries/bonner-libraries", editable = true }
+bonner-libraries = { git = "https://github.com/BonnerLab/bonner-libraries.git", branch = "main" }
 torch = [
     { index = "pytorch-cpu", extra = "cpu" },
     { index = "pytorch-cu126", extra = "cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
