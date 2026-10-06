@@ -6,12 +6,11 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 
+set -e
 echo "Running on $(hostname)"
 
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate scale-free-visual-cortex
-
 cd "$SLURM_SUBMIT_DIR"
+source .venv/bin/activate
 python -u manuscript/scripts-laion/initial_exploration.py
 
 echo "Job completed!"
