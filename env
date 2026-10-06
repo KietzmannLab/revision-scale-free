@@ -1,10 +1,15 @@
-PROJECT_HOME = "/share/klab/labstudents/elherold/revision-scale-free"
-BONNER_MODELS_HOME = "/share/klab/labstudents/elherold/scale-free-data/cache/bonner-models"
+cd /share/klab/labstudents/rafshoon/revision-scale-free
+D=/share/klab/labstudents/rafshoon/scale-free-data
+cat > .env << EOF
+PROJECT_HOME = "/share/klab/labstudents/rafshoon/revision-scale-free"
+BONNER_MODELS_HOME = "$D/cache/bonner-models"
 BONNER_CACHING_HOME = "/share/klab/labstudents/elherold/scale-free-data/cache/bonner-caching"
-BONNER_DATASETS_HOME = "/share/klab/labstudents/elherold/scale-free-data/datasets"
-BONNER_BRAINIO_HOME = "/share/klab/labstudents/elherold/scale-free-data/brainio"
-NILEARN_SHARED_DATA = "/share/klab/labstudents/elherold/scale-free-data/cache/nilearn"
-TORCH_HOME = "/share/klab/labstudents/elherold/scale-free-data/cache/torch"
-HF_HOME = "/share/klab/labstudents/elherold/scale-free-data/cache/huggingface"
+BONNER_DATASETS_HOME = "$D/datasets"
+BONNER_BRAINIO_HOME = "$D/brainio"
+NILEARN_SHARED_DATA = "$D/cache/nilearn"
+TORCH_HOME = "$D/cache/torch"
+HF_HOME = "$D/cache/huggingface"
 HF_HUB_DISABLE_TELEMETRY = 1
 TQDM_LEAVE = 0
+EOF
+cat .env
