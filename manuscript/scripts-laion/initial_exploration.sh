@@ -12,6 +12,6 @@ source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate scale-free-visual-cortex
 
 cd "$SLURM_SUBMIT_DIR"
-python -u initial_exploration.py
+python -u manuscript/scripts-laion/initial_exploration.py
 
 echo "Job completed!"
