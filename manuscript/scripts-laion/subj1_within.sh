@@ -13,6 +13,7 @@ echo "Running on $(hostname)"
 
 cd "$SLURM_SUBMIT_DIR"
 source .venv/bin/activate
+export BONNER_CACHING_HOME=/share/klab/labstudents/rafshoon/scale-free-data/cache/bonner-caching
 nvidia-smi
 python -c "import torch; print('torch', torch.__version__, 'cuda available:', torch.cuda.is_available())"
 python -u manuscript/scripts-laion/subj1_within.py
