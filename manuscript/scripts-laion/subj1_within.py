@@ -10,13 +10,15 @@ from matplotlib import pyplot as plt
 from lib.datasets import compute_shared_stimuli, filter_by_stimulus, laion, split_by_repetition
 from lib.spectra import compute_within_individual_spectra
 
+SUBJECTS = [0]
 N_PERMUTATIONS = 0
 OUTPUT = Path("results/laion/general-region")
 OUTPUT.mkdir(parents=True, exist_ok=True)
+LABEL = "subj" + "-".join(str(subject + 1) for subject in SUBJECTS)
 
 datasets = {
     subject: laion.load_dataset(subject=subject, roi="general")
-    for subject in range(laion.N_SUBJECTS)
+    for subject in SUBJECTS
 }
 
 datasets_within = {
@@ -41,15 +43,15 @@ spectra_within = compute_within_individual_spectra(
     datasets_within,
     n_permutations=N_PERMUTATIONS,
 )
-spectra_within.to_netcdf(OUTPUT / "spectra_within.nc")
+spectra_within.to_netcdf(OUTPUT / f"spectra_within_{LABEL}.nc")
 
 fig, ax = plt.subplots(figsize=(3.5, 3))
 colors = plt.cm.viridis(np.linspace(0, 0.9, laion.N_SUBJECTS))
-for subject in range(laion.N_SUBJECTS):
+rank = spectra_within["rank"].to_numpy()
+for subject in SUBJECTS:
     covariance = spectra_within["covariance"].sel(individual=subject)
     mean = covariance.mean("fold").to_numpy()
     std = covariance.std("fold").to_numpy()
-    rank = spectra_within["rank"].to_numpy()
     positive = mean > 0
     ax.errorbar(
         rank[positive],
@@ -70,6 +72,6 @@ ax.set_ylabel("covariance")
 ax.set_title("within-subject (LAION-fMRI)")
 ax.legend(title="subject", loc="lower left", ncols=2)
 fig.tight_layout()
-fig.savefig(OUTPUT / "general-within.pdf")
-fig.savefig(OUTPUT / "general-within.png", dpi=200)
+fig.savefig(OUTPUT / f"general-within_{LABEL}.pdf")
+fig.savefig(OUTPUT / f"general-within_{LABEL}.png", dpi=200)
 print("Saved", OUTPUT, flush=True)

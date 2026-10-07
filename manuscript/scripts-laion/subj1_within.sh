@@ -11,6 +11,6 @@ echo "Running on $(hostname)"
 
 cd "$SLURM_SUBMIT_DIR"
 source .venv/bin/activate
-python -u manuscript/scripts-laion/general_region_laion.py
+python -u manuscript/scripts-laion/subj1_within.py
 
 echo "Job completed!"
