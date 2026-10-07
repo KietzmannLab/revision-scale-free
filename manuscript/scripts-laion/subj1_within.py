@@ -6,8 +6,8 @@ matplotlib.use("Agg")
 
 import numpy as np
 from matplotlib import pyplot as plt
-
-from lib.datasets import compute_shared_stimuli, filter_by_stimulus, laion, split_by_repetition
+import laion
+from lib.datasets import compute_shared_stimuli, filter_by_stimulus, split_by_repetition
 from lib.spectra import compute_within_individual_spectra
 
 SUBJECTS = [0]
