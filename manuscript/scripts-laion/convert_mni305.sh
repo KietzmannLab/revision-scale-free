@@ -1,4 +1,3 @@
-cat > convert_mni305.sh <<'EOF'
 #!/bin/bash
 #SBATCH --job-name=mni305
 #SBATCH --partition=klab-gpu
@@ -15,4 +14,3 @@ export BONNER_CACHING_MODE=readonly
 
 cd /share/klab/labstudents/rafshoon/revision-scale-free/manuscript/scripts-laion
 uv run python convert_mni305.py
-EOF
