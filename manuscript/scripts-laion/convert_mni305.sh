@@ -1,3 +1,4 @@
+cat > convert_mni305.sh <<'EOF'
 #!/bin/bash
 #SBATCH --job-name=mni305
 #SBATCH --partition=klab-gpu
@@ -12,7 +13,6 @@ set -euo pipefail
 export BONNER_CACHING_HOME=/share/klab/labstudents/elherold/scale-free-data/cache/bonner-caching
 export BONNER_CACHING_MODE=readonly
 
-ls "$BONNER_CACHING_HOME"/data/dataset=laion/betas=TYPED/z_score=True/roi=general/
-
-cd/share/klab/labstudents/rafshoon/revision-scale-free/manuscript/scripts-laion
+cd /share/klab/labstudents/rafshoon/revision-scale-free/manuscript/scripts-laion
 uv run python convert_mni305.py
+EOF
