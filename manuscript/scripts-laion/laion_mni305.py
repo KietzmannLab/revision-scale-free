@@ -7,8 +7,7 @@ import xarray as xr
 from laion_fmri.config import dataset_initialize
 from laion_fmri.subject import load_subject
 
-from lib.datasets.laion import DATA_DIR
-
+from laion import DATA_DIR
 
 MNI_RESOLUTION = 1.8
 GRID_SPACING = 1.778
