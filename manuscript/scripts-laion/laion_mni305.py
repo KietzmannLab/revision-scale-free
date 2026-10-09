@@ -26,14 +26,6 @@ def _brain_indices_of_neuroids(subject, data):
 
 
 def compute_mni305_index_map(subject, *, resolution=MNI_RESOLUTION):
-    """Brain-mask voxel index for each voxel of a `resolution`-mm MNI305 grid.
-
-    `to_template` resamples to MNI305 with nearest-neighbour interpolation, so
-    projecting the voxel indices once gives an exact lookup table that can be
-    applied to every trial. The 1 mm grid is then subsampled the same way as
-    `nsd.resample_1mm_mni` (torch nearest, scale 1/resolution). -1 marks voxels
-    outside the subject's brain mask.
-    """
     n_voxels = subject.get_n_voxels()
     image = subject.to_template(
         np.arange(1, n_voxels + 1, dtype=np.float32), "MNI305",
@@ -52,12 +44,6 @@ def convert_to_mni305(
     subjects: Sequence[str],
     resolution: float = MNI_RESOLUTION,
 ) -> dict[int, dict[int, xr.DataArray]]:
-    """Map repetition-split datasets onto a common MNI305 voxel set.
-
-    Keeps only MNI voxels that land on a loaded (ROI, non-NaN) voxel in every
-    subject, so all outputs share the same neuroid axis in the same order --
-    the requirement for swapping the singular vectors between subjects.
-    """
     dataset_initialize(DATA_DIR)
 
     columns = {}
