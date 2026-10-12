@@ -249,4 +249,4 @@ def check_against_laion_to_template(
     weights = build_projection(data, subject=subject, reference=reference, order=0)
     ours = weights @ values
 
-    return float(np.abs(ours - expected).max())s
+    return float(np.abs(ours - expected).max())
