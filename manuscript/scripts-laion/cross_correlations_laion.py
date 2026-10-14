@@ -1,7 +1,22 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.3
+# ---
+
+# %% [markdown]
+# # cross-correlations (Fig 4)
+
+# %%
 import matplotlib
 matplotlib.use("Agg")
 
 import itertools
+import os
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -19,7 +34,7 @@ from lib.datasets import (
     laion,
     split_by_repetition,
 )
-from lib.datasets.laion_mni import convert_datasets_to_mni_space
+from lib.datasets import laion_mni, laion_mni_template
 from lib.spectra import compute_spectra_with_n_fold_cross_validation
 from lib.utilities import JOURNAL_MATPLOTLIBRC
 
@@ -32,6 +47,8 @@ sns.set_theme(context="paper", style="ticks", rc=JOURNAL_MATPLOTLIBRC)
 REFERENCE_SUBJECT = 0
 RANK_RANGES = ((0, 10), (10, 50), (50, 100))
 N_FOLDS = 8
+METHOD = os.environ.get("MNI_METHOD", "linear")
+SUFFIX = "" if METHOD == "linear" else f"_{METHOD}"
 
 # %% [markdown]
 # ## load datasets and convert to MNI305
@@ -48,12 +65,19 @@ datasets_cross = {
     for subject, dataset in datasets.items()
 }
 
-datasets_mni = convert_datasets_to_mni_space(
-    datasets_cross,
-    subject_ids=dict(enumerate(SUBJECTS)),
-    order=1,
-    resolution=1.8,
-)
+if METHOD == "to_template":
+    datasets_mni = laion_mni_template.convert_datasets_to_mni_space(
+        datasets_cross,
+        subject_ids=dict(enumerate(SUBJECTS)),
+        resolution=1.8,
+    )
+else:
+    datasets_mni = laion_mni.convert_datasets_to_mni_space(
+        datasets_cross,
+        subject_ids=dict(enumerate(SUBJECTS)),
+        order=1,
+        resolution=1.8,
+    )
 
 for subject, datasets_ in datasets_mni.items():
     print(
@@ -64,6 +88,8 @@ for subject, datasets_ in datasets_mni.items():
     )
 
 
+# %% [markdown]
+# ## spectra for all pairs (functional + anatomical)
 
 # %%
 def compute_pair_spectra(
@@ -150,7 +176,7 @@ def compute_cross_correlations(reference: int) -> pd.DataFrame:
 correlations = {reference: compute_cross_correlations(reference) for reference in datasets_mni}
 pd.concat(
     [df.assign(reference=SUBJECTS[r]) for r, df in correlations.items()],
-).to_csv(FIGURES_HOME / "cross_correlations_laion.csv", index=False)
+).to_csv(FIGURES_HOME / f"cross_correlations_laion{SUFFIX}.csv", index=False)
 
 
 # %% [markdown]
@@ -222,7 +248,7 @@ def plot_cross_correlations(reference: int) -> plt.Figure:
 
 for reference in datasets_mni:
     fig = plot_cross_correlations(reference)
-    save_figure(fig, filepath=FIGURES_HOME / f"cross_correlations_{SUBJECTS[reference]}.pdf")
+    save_figure(fig, filepath=FIGURES_HOME / f"cross_correlations_{SUBJECTS[reference]}{SUFFIX}.pdf")
     if reference == REFERENCE_SUBJECT:
-        save_figure(fig, filepath=FIGURES_HOME / "cross_correlations_laion.pdf")
+        save_figure(fig, filepath=FIGURES_HOME / f"cross_correlations_laion{SUFFIX}.pdf")
     plt.close(fig)
