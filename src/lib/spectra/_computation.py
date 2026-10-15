@@ -202,6 +202,45 @@ def _get_random_train_test_split(
         "test": permutation == 0,
     }
 
+def compute_spectra_with_predefined_splits(
+    *,
+    x_train: xr.DataArray,
+    y_train: xr.DataArray,
+    x_test: xr.DataArray,
+    y_test: xr.DataArray,
+    splits: list[tuple[list[int], list[int]]],
+    seed: int = 0,
+    **kwargs,
+) -> xr.Dataset:
+    stimuli = x_train["stimulus"].values
+
+    spectra = []
+    for fold, (train_stimuli, test_stimuli) in enumerate(tqdm(splits, desc="fold", leave=False)):
+        # 1: filter_train = True where stimuli is in train_stimuli
+        filter_train = np.isin(stimuli, train_stimuli)
+
+        # 2: filter_test  = True where stimuli is in test_stimuli
+        filter_test = np.isin(stimuli, test_stimuli)
+
+        # 3: call compute_spectrum (copy the call from the CV function above,
+        #         but with your two masks) and add .expand_dims({"fold": [fold]})
+        #         then append the result to spectra
+
+        spectra.append(
+                    compute_spectrum(
+                        x_train=x_train,
+                        y_train=y_train,
+                        x_test=x_test,
+                        y_test=y_test,
+                        filter_train=filter_train,
+                        filter_test=filter_test,
+                        seed=seed,
+                        **kwargs,
+                    ).expand_dims({"fold": [fold]}),
+                )
+
+    return xr.concat(spectra, dim="fold")
+
 
 def compute_spectra_with_independent_train_test_splits(
     *,

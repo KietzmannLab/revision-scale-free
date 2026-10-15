@@ -8,6 +8,7 @@ from laion_fmri.config import dataset_initialize
 from laion_fmri.discovery import get_subjects
 from laion_fmri.subject import load_subject
 from bonner.caching import cache
+from laion_fmri.splits import get_train_test_ids
 
 # --- Constants ---------------------------------------------------------
 IDENTIFIER = "laion"
@@ -48,7 +49,7 @@ def _load_session(subject, session, roi):
     return data_z
 
 # --- 2. All sessions ---------------------------------------------------
-def _load_all_sessions(subject, roi, sessions=None):
+def _load_all_sessions(subject, roi, sessions=None, include_ood=False):
     """Stack all sessions of one subject."""
     
     # use all sessions if nothing is passed, otherwise use passed subset
@@ -71,10 +72,11 @@ def _load_all_sessions(subject, roi, sessions=None):
     labels = pd.DataFrame({"stimulus": data["stimulus"].values}) # put row labels into table to count stimulus-ID occurrences 
     repetition = labels.groupby("stimulus").cumcount().to_numpy() # groups images with same ID and numbers the rows wtihin each group
     data = data.assign_coords(repetition=("presentation", repetition))
-    
-    # drop OOD images
-    keep_rows = (data["dataset"] != "OOD").values
-    data = data.isel(presentation=keep_rows)  
+
+    if include_ood==False:
+        # drop OOD images
+        keep_rows = (data["dataset"] != "OOD").values
+        data = data.isel(presentation=keep_rows)  
 
     # drop voxels that are NaN in any session
     has_nan = data.isnull().any("presentation").values   # True for voxels with any NaN
@@ -91,22 +93,35 @@ def _load_all_sessions_cached(*, subject, roi):
     sub = load_subject(subject)
     return _load_all_sessions(sub, roi).rename("betas")
 
+# second cache wrapper that includes OODs
+@cache("data/dataset=laion/betas=TYPED/z_score=True/ood=included/roi={roi}/subject={subject}.nc")
+def _load_all_sessions_with_ood_cached(*, subject, roi):
+    """All sessions of one subject; cached on disk after the first call."""
+    dataset_initialize(DATA_DIR)
+    sub = load_subject(subject)
+    return _load_all_sessions(sub, roi, include_ood=True).rename("betas")
+
 # --- 3. Public entry point --------------------------------------------
-def load_dataset(*, subject, roi="general", sessions=None):
+def load_dataset(*, subject, roi="general", sessions=None, include_ood=False):
     """Same role as nsd.load_dataset: returns the final labeled array."""
 
     # load the data: full data from the cache, test subsets without caching
     if sessions is None:
-        data = _load_all_sessions_cached(subject=subject, roi=roi)
+        if include_ood: 
+            data = _load_all_sessions_with_ood_cached(subject=subject, roi=roi)
+        else:
+            data = _load_all_sessions_cached(subject=subject, roi=roi)
     else:
         dataset_initialize(DATA_DIR)
         sub = load_subject(subject)              # name → object
-        data = _load_all_sessions(sub, roi, sessions=sessions)
+        data = _load_all_sessions(sub, roi, sessions=sessions, include_ood=include_ood)
 
     # assign further attributes so they match nsd signature
     attrs = {"betas": "TYPED", "z_score": "True", "subject": subject, "roi": roi}
     if sessions is not None:
         attrs["sessions"] = "-".join(sessions)
+    if include_ood:
+        attrs["ood"] = "included"
     data = data.assign_attrs(attrs)
 
     # build name from configurations to use for caching
@@ -117,4 +132,26 @@ def load_dataset(*, subject, roi="general", sessions=None):
     data = data.set_xindex(["stimulus", "repetition"]).set_xindex(["x", "y", "z"])
 
     return data
+
+def get_split_stimuli(*, subject: str, pool: str, name: str, ood_types=None):
+    """
+    Return (train, test) as lists of stim_idx for one LAION split. 
+    Laion gives the split as file names but the popeline only knows the images by stim_idx numbers. 
+    """
+    dataset_initialize(DATA_DIR)
+    sub = load_subject(subject)
+
+    # TODO 1. get the file names for this split (train_names, test_names)
+    train_ids, test_ids = get_train_test_ids(name, pool=pool, ood_types=ood_types)
+
+    # TODO 2. lookup table image_name -> stim_idx from sub.metadata (drop duplicates first, each image appears once per presentation)
+    table = sub.metadata[["image_name", "stim_idx"]]
+    table = table.drop_duplicates()
+    lookup = dict(zip(table["image_name"], table["stim_idx"]))
+
+    # TODO 3. translate train_names and test_names using the table 
+    train = [lookup[name] for name in train_ids]
+    test = [lookup[name] for name in test_ids]
+
+    return train, test 
 

@@ -175,12 +175,12 @@ def load_dataset(
     ).assign_attrs({"roi": roi})
 
     identifier = ".".join([f"{key}={value}" for key, value in betas.attrs.items()])
-    return (
-        betas.rename(f"{IDENTIFIER}.{identifier}")
-        .set_xindex(["stimulus", "repetition"])
-        .set_xindex(["x", "y", "z"])
-    )
-
+    betas = betas.rename(f"{IDENTIFIER}.{identifier}")
+    if "stimulus" not in betas.xindexes:
+        betas = betas.set_xindex(["stimulus", "repetition"])
+    if "x" not in betas.xindexes:
+        betas = betas.set_xindex(["x", "y", "z"])
+    return betas
 
 def resample_1mm_mni(
     data: xr.DataArray,

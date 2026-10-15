@@ -18,6 +18,7 @@ from lib.spectra._computation import (
     compute_spectra_with_independent_train_test_splits,
     compute_spectra_with_n_fold_cross_validation,
     compute_spectrum,
+    compute_spectra_with_predefined_splits
 )
 from lib.spectra._cross_decomposition import CrossDecomposition
 from lib.spectra._plotting import offset_spectra, plot_spectra, plot_spectrum
@@ -33,6 +34,7 @@ def compute_within_individual_spectra(
     stop: int = 10_000,
     n_permutations: int = 0,
     n_bootstraps: int = 0,
+    splits=None,
     **kwargs,
 ) -> xr.Dataset:
     bin_edges, bin_centers = extract_geometrically_spaced_bins(
@@ -43,16 +45,28 @@ def compute_within_individual_spectra(
 
     spectra_within = []
     for individual, dataset in tqdm(datasets.items(), desc="individual", leave=False):
-        spectra_ = compute_spectra_with_n_fold_cross_validation(
-            x_train=dataset[0],
-            y_train=dataset[1],
-            x_test=dataset[0],
-            y_test=dataset[1],
-            n_folds=n_folds,
-            n_permutations=n_permutations,
-            n_bootstraps=n_bootstraps,
-            **kwargs,
-        )
+        if splits is None: 
+            spectra_ = compute_spectra_with_n_fold_cross_validation(
+                x_train=dataset[0],
+                y_train=dataset[1],
+                x_test=dataset[0],
+                y_test=dataset[1],
+                n_folds=n_folds,
+                n_permutations=n_permutations,
+                n_bootstraps=n_bootstraps,
+                **kwargs,
+            )
+        else: 
+            spectra_ = compute_spectra_with_predefined_splits(
+                x_train=dataset[0],
+                y_train=dataset[1],
+                x_test=dataset[0],
+                y_test=dataset[1],
+                splits=splits[individual],
+                n_permutations=n_permutations,
+                n_bootstraps=n_bootstraps,
+                **kwargs,
+            )
         spectra_ = bin_data(
             spectra_,
             bin_edges={"component": bin_edges},
@@ -74,6 +88,7 @@ def compute_cross_individual_spectra(
     stop: int = 10_000,
     n_permutations: int = 0,
     n_bootstraps: int = 0,
+    splits=None,
     **kwargs,
 ) -> xr.Dataset:
     bin_edges, bin_centers = extract_geometrically_spaced_bins(
@@ -84,28 +99,53 @@ def compute_cross_individual_spectra(
 
     spectra_cross = []
     for individual, dataset in tqdm(datasets.items(), desc="individual", leave=False):
+        if splits is None:
+            spectra_0 = compute_spectra_with_n_fold_cross_validation(
+                x_train=datasets[reference_individual][0],
+                y_train=dataset[1],
+                x_test=datasets[reference_individual][0],
+                y_test=dataset[1],
+                n_folds=n_folds,
+                n_permutations=n_permutations,
+                n_bootstraps=n_bootstraps,
+                **kwargs,
+            )
+            spectra_1 = compute_spectra_with_n_fold_cross_validation(
+                x_train=datasets[reference_individual][1],
+                y_train=dataset[0],
+                x_test=datasets[reference_individual][1],
+                y_test=dataset[0],
+                n_folds=n_folds,
+                n_permutations=n_permutations,
+                n_bootstraps=n_bootstraps,
+                **kwargs,
+            )
+        else:
+            spectra_0 = compute_spectra_with_predefined_splits(
+                x_train=datasets[reference_individual][0],
+                y_train=dataset[1],
+                x_test=datasets[reference_individual][0],
+                y_test=dataset[1],
+                splits=splits,
+                n_permutations=n_permutations,
+                n_bootstraps=n_bootstraps,
+                **kwargs,
+            )
+            spectra_1 = compute_spectra_with_predefined_splits(
+                x_train=datasets[reference_individual][1],
+                y_train=dataset[0],
+                x_test=datasets[reference_individual][1],
+                y_test=dataset[0],
+                splits=splits,
+                n_permutations=n_permutations,
+                n_bootstraps=n_bootstraps,
+                **kwargs,
+            )
+
         spectra_ = xr.concat(
             [
-                compute_spectra_with_n_fold_cross_validation(
-                    x_train=datasets[reference_individual][0],
-                    y_train=dataset[1],
-                    x_test=datasets[reference_individual][0],
-                    y_test=dataset[1],
-                    n_folds=n_folds,
-                    n_permutations=n_permutations,
-                    n_bootstraps=n_bootstraps,
-                    **kwargs,
-                ).expand_dims({"comparison": [0]}),
-                compute_spectra_with_n_fold_cross_validation(
-                    x_train=datasets[reference_individual][1],
-                    y_train=dataset[0],
-                    x_test=datasets[reference_individual][1],
-                    y_test=dataset[0],
-                    n_folds=n_folds,
-                    n_permutations=n_permutations,
-                    n_bootstraps=n_bootstraps,
-                    **kwargs,
-                ).expand_dims({"comparison": [1]}),
+                spectra_0.expand_dims({"comparison": [0]}),
+                spectra_1.expand_dims({"comparison": [1]}),
             ],
             dim="comparison",
         )
